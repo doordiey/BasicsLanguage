@@ -14,6 +14,16 @@
 
 [100天ML代码](<https://github.com/Avik-Jain/100-Days-Of-ML-Code>)
 
+## go
+
+参考资料：
+
+【简要阅读过一本go语言入门的书】
+
+[A tour of Go](<https://tour.golang.org/welcome/1>)
+
+
+
 ## emoji
 
 | emoji   | emoji代码 | commit说明                              |
