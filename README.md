@@ -1,6 +1,7 @@
 # BasicsLanguage
 
 - 基础语言
+- 技能树的一部分吧
 
 ## Python
 
@@ -22,7 +23,13 @@
 
 [A tour of Go](<https://tour.golang.org/welcome/1>)
 
+## git
 
+参考资料：
+
+[一些介绍直接用](<https://www.liaoxuefeng.com/wiki/896043488029600>)
+
+[learn git branching](<https://learngitbranching.js.org/?NODEMO>) :节点图直观的查看命令的具体操作。
 
 ## emoji
 
