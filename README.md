@@ -9,6 +9,8 @@
 
 [Python 100 days](<https://github.com/jackfrued/Python-100-Days>)
 
+[《effcitive python 59个有效方法写出更好的python》](./effective python) :未找到中文版，那就自己整一个。【有很多不足，欢迎指出】
+
 ## ML
 
 参考资料：
