@@ -101,7 +101,254 @@ print(sys.version)
 - 与更大的python社区共享一个通用的规范可以促进与他人的合作
 - 使用一个一致的编码规范可以使你在后期要修改你自己的代码的时候变得轻松
 
-## 项目3：了解字节、字符串、国际码之间的区别
+## 项目3：了解bytes、str、unicode之间的区别
 
-  在python3中，有两种类型可以表示字符序列：字节和
+  在python3中，有两种类型可以表示字符序列：字节和str。一个字节由8比特组成。str则由国标码组成。
+
+  在python2中，也有来那种类型表示字符序列：字符串和国标码。和python3不同的是，它的一个字符串包含8个比特值，而国标码包含国标码字符。
+
+  有很多方法可以证明国标码字符是二进制数据（8个比特值）。最常用的国标码是UTF-8.最重要的是，在Python3中的字符串实例和python2中的国标码实例并不包含有关联的二进制编码。要想将国际码字符转换为二进制编码，你必须使用编码模式，而要想将二进制编码转换为国际码字符，你必须使用解码模式。
+
+  当你在写python程序时，你必须要在你接口处处理关于编码和解码的问题。你的代码核心应该使用国际码字符类型（python中的str或者python2中的unicode），不要对字符编码有任何假设。这样处理可以使你的代码可以容易的接收其它文本编码的输入([Latin-1](<https://baike.baidu.com/item/Latin1>),[Shift JIS](<https://zh.wikipedia.org/zh-hans/Shift_JIS>),[Big5](<https://zh.wikipedia.org/wiki/%E5%A4%A7%E4%BA%94%E7%A2%BC>))，同时还严格限制你的输出文本编码（最好是utf-8）。
+
+  字符类型的不同在Python代码中会导致两个常见的情况：
+
+- 你想生成一个8比特值的由UTF-8编码的字符
+- 你想生成一个国标码字符，不采用特别的编码方式 
+
+  你可以使用两个有用函数的去在两个类型之间进行转换，以此去确保输入类型符合你代码的要求。
+
+  在python3中，你需要一个方法接收str或bytes，返回一个str，如下：
+
+```python
+def to_str(bytes_or_str):
+    if isinstance(byte_or_str, bytes):
+    //如果接收的是bytes，对其进行按照utf-8解码
+        value = bytes_or_str.decode('utf-8')
+    else:
+        value = bytes_or_str
+    return value //str类型
+```
+
+  还需要另一个方法接收str或者bytes，返回bytes。如下：
+
+```python
+def to_bytes(bytes_or_str): 
+	if isinstance(byte_or_str, str):
+		value = bytes_or_str.encode('utf-8')
+    else:
+        value = bytes_or_str
+    return value
+```
+
+  在python2中，一个方法接收str或unicode，返回unicode时，如下：
+
+```python
+def to_unicode(unicode_or_str):
+    if isinstance(unicode_or_str, str):
+        value = unicode_or_str.decode('utf-8')
+    else:
+        value = unicode_or_str
+    return value
+```
+
+  另一个情况是返回str的，如下。
+
+```python
+def to_unicode(unicode_or_str):
+    if isinstance(unicode_or_str, unicode):
+        value = unicode_or_str.encode('utf-8')
+    else:
+        value = unicode_or_str
+    return value
+```
+
+  下面说明两个python在处理8比特值和unicode字符时容易碰到的陷阱。
+
+  第一个陷阱是在python2中，当str仅包含7比特的ASCII字符时，它和unicode似乎是同一个类型。
+
+- 你可以在把str和unicode结合时使用+操作
+- 你可以在比较str和unicode时使用相等和不相等的操作
+- 你可以在使用unicode作为格式化字符串，例如’%s‘
+
+  上述的可行性意味着你在给函数传参时，传递一个str或一个unicode都会有同样的效果（正如处理的只是7比特的ASCII一样）。但python3中，bytes和str并不具有等价性，即使是一个空的字符串，所以在你对函数传参时要尤其对字符序列的类型进行注意。
+
+  第二个陷阱是在python3中，对文件处理时默认是UTF-8编码，而在python2中对文件处理的默认编码的二进制编码。这会导致一些出乎意料的错误，尤其是对已经习惯了python2的程序员来说。
+
+  举个例子，如果你想在一个文件里写一些随机的二进制数据，在python2中是可行的，但python3中不行。
+
+```python
+with open('/random.bin','w') as f:
+    f.write(os.urandom(10))
+//TypeError:	must be	str,not	bytes
+```
+
+  这个异常的原因是python3在open中的类型错误。python3默认的是'utf-8'。这就表示其的读写操作默认只允许是str，而不是二进制数据。
+
+  为了解决上面的那个异常，你必须需改其模式为'wb'，而不是'w'。下面为修改后可运行的。
+
+```python
+with open('/random.bin','wb') as f:
+    f.write(os.urandom(10))
+```
+
+  不光是写文件的时候如此，在读取文件内容的操作也是一样，应为”rb"模式，而不是'r'模式。
+
+### 一些需要记住的事
+
+- 在python3中，bytes是8比特的序列，str是Unicode字符序列。两者不能使用+ > like  操作进行比较
+- 在python2中，str是8比特的序列，而Unicode是Unicode字符序列，当str只包含7比特的ascii字符时，两者可以使用+ > like 进行操作
+- 使用有效的函数去确保你的输入是你期望的字符序列类型
+- 如果你想要读写二进制数据或文件，总是以rb wb的二进制模式进行打开。
+
+## 项目4： 编写辅助函数而不是复杂的表达式
+
+​    python的特殊句法使得你可在一个单行的表达式中实现一个复杂的逻辑。举个例子，如果你想要从一个URL中解码一个查询的字符串，每个查询字符串代表一个整数值。
+
+```python 
+from urllib.parse import parse_qs
+my_values = parse_qs('red=5&blue=0&green=',keep_blank_values=True)
+print(repr(my_values))
+
+//输出：
+{‘red’:	[‘5’],	‘green’:[”],‘blue’:	[‘0’]
+```
+
+  查询字符串参数可能有多个不同的值，可能是单一的值，可能是存在但值为空，可能会丢失。在结果的字典中使用get方法可以返回每个情况各自不同的值
+
+```python
+print(‘Red:	’,	my_values.get(‘red’))
+print(‘Green:’,	my_values.get(‘green’)) 
+print(‘Opacity:	‘,	my_values.get(‘opacity’)
+      
+//输出：
+Red:[‘5’]
+Green:[”] 
+Opacity:None
+```
+
+  当一个参数是不支持的或者其值为空，默认返回为0是一个很好的做法。你可能会选择布尔表达式来进行处理，因为这种逻辑似乎不适合整个if语句或辅助函数。
+
+  python的句法可以使变得简单，python中空字符串，空列表和零在逻辑判断中都等价为False，因此，当第一个子表达式为False时，就取后面的值，下面的代码使用了or运算符。
+
+```python
+red = my_values.get('red',[''])[0] or 0
+green = my_values.get('green',[''])[0] or 0
+opacity = my_values.get('opacity',[''])[0] or 0
+print(‘Red:	’,	my_values.get(‘red’))
+```
+
+  对于red的情况它的key为'5'，所以最后取值为逻辑判断的第一部分。
+
+  对于green的情况它的key为空字符串，所以最后取值为or逻辑判断的第二部分。
+
+  对于opacity的情况从列表中没有它的值，则返回get函数的第二项即一个['']，所以最后取值为or逻辑判断的第二部分。
+
+  然而进行了上述的处理后，得到的结果仍然不是你想要的答案，你想要的是每个查询字符值为一个整数。为了达到你的要求，你还需要对red的情况进行类型强制转换为Int型。
+
+```python 
+red = int(my_values.get('red',[''])[0] or 0)
+```
+
+  这样处理后会使得代码难以阅读，别人来阅读代码时还是需要花费一定的时间将这个表达式拆成各个部分，才能看懂它到底是在做什么。虽然简短是很好的，但不必把所有内容放在一行内。
+
+  python2添加if/else的判断表达使得这个在保持简短的同时更加清晰。
+
+```python
+red = my_values.get('red',[''])
+red = int(red[0]) if red[0] else 0
+```
+
+  这是更好的写法，对于不太复杂的情况，if/else表达式可以使事情变得情况。但是，这样写还是不如在多行上使用完整的if/else语句的替代方案更清晰。看道所有逻辑这样展开，显然密集版本显得更加复杂。
+
+```python
+green = my_values.get('green',[''])
+if green[0]:
+    green = int(green[0])
+else:
+    green = 0
+```
+
+  然而，如果每一个都展开写，会显得代码特别长，因此写一个辅助函数去解决需要重复的使用同一逻辑的情况是一个很好的办法。
+
+``` python
+def get_frint_int(values, key, default=0):
+    found = values.get(key,[''])
+    if found[0]:
+        found = int(found[0])
+    else:
+        found = default
+    return found
+```
+
+通过调用函数比使用or或者使用if/else表达式的方法都更加清晰。
+
+一旦你的表达式变得复杂，你就要考虑是否要将这个逻辑写成一个辅助函数调用的形式。你在可读性上做出的提升得到的收益总是会比简洁性多。不要让python复杂表达式的特殊语法使得你陷入混乱中。
+
+### 一些需要记住的事情
+
+- python的语法会很容易让你写出单行的表达式，但它们有时候会过于复杂，不具备可读性
+- 将复杂的表达写入辅助函数中，尤其是当你需要多次调用相同的逻辑。
+- if / else表达式比在表达式中使用布尔运算符（如or和and和）更具备可读性。
+
+## 项目5：知道如何对序列进行切片处理
+
+  python的语法里包括了将序列切片成各个部分的操作。切片使得你可以很轻松的获得一个序列的子集。最简单的用途的对类型list,str和bytes的处理。切片可以扩展道实现__getitem\_\_和\_\_setitem\_\_的任何python方法。
+
+  切片最基础的语法是`somelist[start:end]`，包括start，不包括end。
+
+```python
+a = ['a','b','c','d','e','f','g','h']
+print(a[:4])
+print(a[-4:])
+print(a[3:-3])
+```
+
+  当你是要从列表头部开始切片时，你应该省略0值，这样使得更加简洁
+
+  同样，当你的切片要进行到列表的最后一项时，你应该省略长度不屑，这样显得更加简洁。
+
+  使用负数进行切片有助于相对于列表的结尾进行偏移。
+
+  所有这些形式的切片对代码阅读都是清晰的，所以我鼓励你使用这种形式。
+
+  切片可以正确处理超出列表长度的索引。这使得你的代码很容易确定要考虑输入序列的最大长度。
+
+  但如果不是使用切片，只是索引一个超过范围的值则会报错。
+
+  切片的结果是一个新的列表。保留了对原始列表中对象的引用。修改切片结果的值并不会影响原列表的值
+
+```python
+b = a[4:]
+print(b)
+b[1] = 99
+print(b)
+print(a)
+```
+
+  当你在分配中使用时，切片会替换原始列表中的指定范围。
+
+```python
+print(a)
+a[2:7] = [90,289,89]
+print(a)
+```
+
+  如果你在切片时start和end的值都不设置，你会得到一个原始列表的复制。
+
+  如果你声明一个切片没有start和end索引，你将替换原始的整个内容。
+
+```python
+print(a)
+a[:] = [101,102,103]
+print(a)
+```
+
+### 一些需要记住的事情
+
+- 保持代码简洁：不要为索引提供0或者序列的长度
+- 切片可以正确处理超过范围的开始或结束索引，可以易于在前后边界表达切片
+- 使用切片对列表进行修改或赋值时，即使长度不同，也将使用引用的内容替换原始序列范围内的值。
+
+
 
