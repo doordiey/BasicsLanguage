@@ -613,4 +613,216 @@ for i, c in enumerate(c_list, 1):
 
 - 你可以对enumerate指定第二个参数表示从哪个数开始计数
 
-  
+
+## 项目11：使用`zip`去并行处理迭代器
+
+  有时候你想要在python中多个相关的对象里查找数据。列表生成器使得你可以轻松的按照一定的表达式和输入数据生成一个相关数据的列表。
+
+```python
+names = ['zhang', 'wang', 'yu', 'li']
+letters = [len(n) for n in names]
+```
+
+  派生列表中的项目通过索引与原列表的项目有一定的管理。想要并行生成两个列表，你可以通过迭代names原列表内的每一项。
+
+```python
+longest_name = None
+max_letters = 0
+for i in range(len(names)):
+    count = letters[i]
+    if count > max_letters :
+        longest_name = names[i]
+        max_letters = count
+print(longest_name)
+```
+
+  按上面的代码处理的话整个循环显得十分复杂，因为同时要用到索引和值，我们可以使用项目10中的枚举。
+
+```python
+for i, name in enumerate(names):
+    count = letters[i]
+    if count > max_letters:
+        longest_name = name
+        max_letters = count
+```
+
+  但这样还是不够理想，为了使代码更加简洁，python提供了内置函数`zip`。在python3中，zip可以通过懒生成器包装两个及以上的多个迭代器。zip生成器每次包含每个迭代器的值。下面的代码示例用`zip`来处理多个列表。
+
+```python
+for name, count in zip(names, letters):
+    if count > max_letters:
+        longest_name = name
+        max_letters = count
+```
+
+  关于内置函数`zip`有两个问题。
+
+  第一个问题是python2中的zip不是一个生成器，它会返回创建的所有元组的列表。这会导致使用很多的内存，导致你的程序卡顿。如果你想要在python2中使用`zip`处理一个很大的迭代器的话，你可以使用`itertools`内置模块中的`izip`。
+
+  第二个问题是如果输入迭代器有着不同的长度的话，那么zip的表现会有些奇怪。举个例子，在names列表中添加一个，而letters中不添加。再运行zip，会出现不是你设想的那样的结果。
+
+```python
+names.append('ms')
+for name, count in zip(names, letters):
+    print(name)
+```
+
+  你会发现，新添加的ms并没有进行输出。这就是zip的工作机制，它会遍历迭代知道其中一个迭代器无法迭代为止。这样的机制在你处理有着相同长度的迭代器时会有很好的表现。但在另一些情况，如果你不能确定迭代器的长度相等的话，你可以考虑使用`itertools`内置模块中的`zip_longest`函数。
+
+### 一些需要记住的事情
+
+- `zip`内置函数可以用来并行处理多个迭代器
+- 在python3中，`zip`是一个输出元组的懒生成器，在python2中`zip`会返回所有元组的列表集合。
+- `zip`会按照多个迭代器最短的那个长度作为终止的条件
+- 如果你不能确定迭代器的长度相等的话，你可以考虑使用`itertools`内置模块中的`zip_longest`函数。
+
+## 项目12： 在循环结构体后避免else块
+
+  python循环有一个别的程序语言没有的额外特性：你可以在一个循环体后直接放一个else块
+
+```python
+for i in range(3):
+    print('i')
+else:
+    print('else')
+```
+
+  可以发现，else块在循环结束后立即执行了。为什么这个叫else？而不是and?在if/else语句中，else的意思是“如果判断的条件不成立的话就执行这个”。在try/except语句中，except也有着类似的定义“如果尝试此操作之前失败，请执行此操作”。
+
+  将else的所有用法都告诉一个新的程序员后，这个程序员可能会在理解for/else中else的含义理解为“如果循环没有完成的话，请执行此操作“。但事实上，正好相反。如果在循环中使用了break终止循环的进行则会跳过else块。
+
+```python
+for i in range(3):
+    print(i)
+    if i == 1:
+        break
+else:
+    print('else')
+```
+
+  另外，如果循环的是一个空的集合或者while false时，else块仍然会运行。
+
+```python
+for i in []:
+    print(i)
+else:
+    print('else')
+while False:
+    print('1')
+else:
+    print('else')
+```
+
+  这些表现的可以看出在循环后接else块可以处理当你使用循环搜索某些内容的情况。比如，如果你想要确定两个数是否互质。那么你可以迭代每个可能的共因数进行测试。当每一个可能性都尝试后，循环完毕，运行else块就说明是互质，在循环测试过程中没有被break打断。
+
+```python
+a = 4
+b = 9
+for i in range(2, min(a, b) + 1):
+    print(i)
+    if a % i == 0 and b % i == 0:
+        print('not coprime')
+        break
+else:
+    print('comprime')
+```
+
+  然而实际上你并不会用这样的代码，你通常会写一个辅助函数来帮助计算。关于辅助函数有下面两种写法。
+
+  第一种方法是当你在循环中找到符合条件的就直接返回，如果循环正常完毕就返回默认值
+
+```python
+def coprime(a, b):
+    for i in range(2, min(a, b) + 1):
+        if a % i == 0 and b % i == 0:
+            return False
+    return True
+```
+
+
+
+​    第二种方法是设置一个结果变量如下。
+
+```python
+def coprime(a, b):
+    is_coprime = True
+    for i in range(2, min(a, b) + 1):
+        if a % i == 0 and b % i == 0:
+            is_coprime = False
+            break
+    return is_coprime
+```
+
+   辅助函数得这两种写法都比用else的方法表现得更清楚。像循环这种简单的构造在python中是很好理解的，所以尽量避免在循环结构体后直接接else块。
+
+### 一些需要记住的事情：
+
+- python有可以在循环结构体后直接接else块的特殊结构
+- 在循环结构体后的else块只有当循环是正常完全遍历后才会执行
+- 避免在循环结构体后直接接else块
+
+## 项目13：利用好try/except/else/finally的每一个部分
+
+  在python中异常处理时有四个不同的时间可以采取措施。由`try`，`except`，`else`，`finally`这四个部分组成。每个部分都有它自己的独特目的，它们的部分结合也十分有用。
+
+### finally块
+
+  当你希望异常发生时，即使发生异常也要运行清除代码的话，请使用try/finally。一个常用的用法是在文件处理时。
+
+```python
+handle = open('data.txt')
+try:
+    data = handle.read()
+finally:
+    handle.close()
+```
+
+  无论在读时出现什么异常，finally块都会执行会记得把文件关闭。你必须在try块之前调用open，因为当打开文件时发生异常就不需要finally块的关闭处理。
+
+### else块
+
+  当try块没有抛出异常的情况下，else块就会运行。该部分会使你的代码变得简洁并提高可读性。举个例子，如果你想要从一个字符串中加载json字典，并返回其包含的key值。
+
+```python
+def load_json_key(data, key):
+    try:
+        result_dict = json.loads(data)
+    except ValueError as e:
+        raise KeyError from e
+    else:
+        return result_dict[key]
+```
+
+  如果数据不是合法的json，按照json.loads处理后就会抛出一个ValueError。这个异常就会被expect部分捕捉并处理。如果是正常的就是执行else块。这就使得代码十分清晰。
+
+### 一起使用
+
+四个部分一起使用。举个例子，如果你想要从一个文件中做一些处理工作，并在原文件位置更新数据。可以按下方代码编写。
+
+```python
+UNDEFINED = object()
+def divide_json(path):
+    handle = open(path, 'r+')
+    try:
+        data = handle.read()
+        op = json.loads(data)
+        value = (        	op['numerator']/op['denominator']
+        )
+    except ZeroDivisionError as e:
+        return UNDEFINED
+    else:
+        op['result'] = value
+        result = json.dumps(op)
+        handle.seek(0)
+        handle.write(result)
+        return value
+   finally:
+    handle.close()
+```
+
+### 一些需要记住的事情
+
+- try/finally的复合语句可以让你不管try块是否出现异常都运行清除代码
+- else使你的代码变得简洁，将try和except清晰分开
+- 在成功的try块之后但在finally块中的常规清理之前，else块可用于执行其他操作
+
